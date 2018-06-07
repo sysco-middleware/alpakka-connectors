@@ -11,5 +11,19 @@
 
     <artifactId>alpakka-files</artifactId>
 
+    <name>files</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.lightbend.akka</groupId>
+            <artifactId>akka-stream-alpakka-file_2.12</artifactId>
+            <version>0.19</version>
+        </dependency>
+        <dependency>
+            <groupId>io.methvin</groupId>
+            <artifactId>directory-watcher</artifactId>
+            <version>0.5.1</version>
+        </dependency>
+    </dependencies>
 
 </project>
