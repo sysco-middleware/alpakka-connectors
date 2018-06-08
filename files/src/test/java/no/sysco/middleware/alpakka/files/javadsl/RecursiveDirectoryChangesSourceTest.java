@@ -26,7 +26,7 @@ import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class DirectoryWatcherSourceTest {
+public class RecursiveDirectoryChangesSourceTest {
 
     private static final String BASEDIR = "target\\watch-dir";
     private static final Path BASE_PATH =FileSystems.getDefault().getPath(BASEDIR).toAbsolutePath();
@@ -62,7 +62,7 @@ public class DirectoryWatcherSourceTest {
     public void sourceShouldEmitOnDirectoryChanges() throws Exception {
         final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
 
-        DirectoryWatcherSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
                 .runWith(Sink.fromSubscriber(probe), materializer);
 
         probe.request(1);
@@ -95,7 +95,7 @@ public class DirectoryWatcherSourceTest {
 	public void sourceShoudldEmitOnSubdirectoryChanges() throws IOException {
         final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
 
-        DirectoryWatcherSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
                 .runWith(Sink.fromSubscriber(probe), materializer);
 
         probe.request(1);
@@ -141,7 +141,7 @@ public class DirectoryWatcherSourceTest {
 
         final int numberOfChanges = 10;
 
-        DirectoryWatcherSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
                 .runWith(Sink.fromSubscriber(probe), materializer);
 
         probe.request(numberOfChanges);
@@ -177,7 +177,7 @@ public class DirectoryWatcherSourceTest {
 
         final int numberOfChanges = 10;
 
-        DirectoryWatcherSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
                 .runWith(Sink.fromSubscriber(probe), materializer);
 
         probe.request(numberOfChanges);

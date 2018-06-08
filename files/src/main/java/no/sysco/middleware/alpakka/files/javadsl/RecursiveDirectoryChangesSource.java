@@ -19,7 +19,12 @@ import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-public class DirectoryWatcherSource {
+/**
+ * RecursiveDirectoryChangesSource will emit elements every time there is a change to a watched directory in the local
+ * file system or any of the subdirectories (new or existing). The enumeration consists of the path that was changed
+ * and an enumeration describing what kind of change it was.
+ */
+public class RecursiveDirectoryChangesSource {
 
     public static Source<Pair<Path, DirectoryChange>, NotUsed> create(Path directoryPath, Duration pollInterval, int maxBufferSize) {
         return Source.fromGraph(new DirectoryWatcherSourceStage(directoryPath, pollInterval, maxBufferSize));
@@ -31,7 +36,7 @@ public class DirectoryWatcherSource {
         private final Duration pollInterval;
         private final int maxBufferSize;
 
-        private final Outlet<Pair<Path, DirectoryChange>> outlet = Outlet.create("DirectoryWatcherSource.out");
+        private final Outlet<Pair<Path, DirectoryChange>> outlet = Outlet.create("RecursiveDirectoryChangesSource.out");
 
         private final SourceShape<Pair<Path, DirectoryChange>> shape =
                 new SourceShape<>(outlet);
