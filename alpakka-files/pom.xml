@@ -10,8 +10,11 @@
     </parent>
 
     <artifactId>alpakka-files</artifactId>
+    <packaging>jar</packaging>
 
-    <name>files</name>
+    <name>alpakka-files</name>
+    <description>Alpakka connectors for file system handling.</description>
+    <url>https://github.com/sysco-middleware/alpakka-connectors/alpakka-files</url>
 
     <dependencies>
         <dependency>
