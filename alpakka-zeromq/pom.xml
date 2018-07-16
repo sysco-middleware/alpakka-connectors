@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>no.sysco.middleware.alpakka</groupId>
+        <artifactId>alpakka-connectors</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>alpakka-zeromq</artifactId>
+    <packaging>jar</packaging>
+
+    <name>alpakka-zeromq</name>
+    <description>Alpakka connectors for ZeroMQ.</description>
+    <url>https://github.com/sysco-middleware/alpakka-connectors/alpakka-zeromq</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_2.12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.zeromq</groupId>
+            <artifactId>jeromq</artifactId>
+            <version>0.4.3</version>
+        </dependency>
+    </dependencies>
+</project>

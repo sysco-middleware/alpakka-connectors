@@ -48,6 +48,7 @@
 
     <modules>
         <module>alpakka-files</module>
+        <module>alpakka-zeromq</module>
     </modules>
 
     <dependencyManagement>
