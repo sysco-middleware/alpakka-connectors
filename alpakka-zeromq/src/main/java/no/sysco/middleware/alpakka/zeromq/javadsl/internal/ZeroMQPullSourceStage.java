@@ -13,14 +13,14 @@ import org.zeromq.ZMQ;
 
 import java.util.Set;
 
-public class ZeroMQSourceStage extends GraphStage<SourceShape<ByteString>> {
+public class ZeroMQPullSourceStage extends GraphStage<SourceShape<ByteString>> {
 
     private final Set<String> addresses;
 
     private final Outlet<ByteString> outlet = Outlet.create("ZeroMQ.out");
     private final SourceShape<ByteString> shape = new SourceShape<>(outlet);
 
-    public ZeroMQSourceStage(Set<String> addresses) {
+    public ZeroMQPullSourceStage(Set<String> addresses) {
         this.addresses = addresses;
     }
 
@@ -40,10 +40,9 @@ public class ZeroMQSourceStage extends GraphStage<SourceShape<ByteString>> {
             public void preStart() throws Exception {
                 super.preStart();
                 zContext = new ZContext();
-                socket = zContext.createSocket(ZMQ.SUB);
+                socket = zContext.createSocket(ZMQ.PULL);
                 String join = String.join(",", addresses);
                 socket.connect(join);
-                socket.subscribe("B");
             }
 
             @Override
