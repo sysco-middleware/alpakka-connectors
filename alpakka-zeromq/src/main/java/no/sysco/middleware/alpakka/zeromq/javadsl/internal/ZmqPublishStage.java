@@ -8,14 +8,10 @@ import akka.stream.stage.AbstractInHandler;
 import akka.stream.stage.AbstractOutHandler;
 import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
-import no.sysco.middleware.alpakka.zeromq.javadsl.internal.ZeroMQStageLogic;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-/**
- * Draft status
- */
-public class ZeroMQRequestStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
+public class ZmqPublishStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
 
     private final String addresses;
 
@@ -23,7 +19,7 @@ public class ZeroMQRequestStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
     private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQPublish.out");
     private final FlowShape<ZMsg, ZMsg> shape = new FlowShape<>(inlet, outlet);
 
-    public ZeroMQRequestStage(String addresses) {
+    public ZmqPublishStage(String addresses) {
         this.addresses = addresses;
     }
 
@@ -34,22 +30,21 @@ public class ZeroMQRequestStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
 
     @Override
     public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
-        return new ZeroMQStageLogic.ClientStageLogic(shape, addresses, ZMQ.REQ) {
+        return new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PUB) {
             {
                 setHandler(shape.in(), new AbstractInHandler() {
                     @Override
                     public void onPush() throws Exception {
                         final ZMsg elem = grab(shape.in());
                         elem.send(socket());
-                        final ZMsg reply = ZMsg.recvMsg(socket(), false);
-                        push(shape.out(), reply);
+                        push(shape.out(), elem);
                     }
                 });
 
                 setHandler(shape.out(), new AbstractOutHandler() {
                     @Override
                     public void onPull() throws Exception {
-                       tryPull(shape().in());
+                       tryPull(shape.in());
                     }
                 });
             }

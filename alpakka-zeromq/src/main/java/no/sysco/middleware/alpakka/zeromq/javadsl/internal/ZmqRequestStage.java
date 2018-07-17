@@ -11,7 +11,10 @@ import akka.stream.stage.GraphStageLogic;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-public class ZeroMQPublishStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
+/**
+ * Experimental
+ */
+public class ZmqRequestStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
 
     private final String addresses;
 
@@ -19,7 +22,7 @@ public class ZeroMQPublishStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
     private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQPublish.out");
     private final FlowShape<ZMsg, ZMsg> shape = new FlowShape<>(inlet, outlet);
 
-    public ZeroMQPublishStage(String addresses) {
+    public ZmqRequestStage(String addresses) {
         this.addresses = addresses;
     }
 
@@ -30,14 +33,15 @@ public class ZeroMQPublishStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
 
     @Override
     public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
-        return new ZeroMQStageLogic.ServerStageLogic(shape, addresses, ZMQ.PUB) {
+        return new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.REQ) {
             {
                 setHandler(shape.in(), new AbstractInHandler() {
                     @Override
                     public void onPush() throws Exception {
                         final ZMsg elem = grab(shape.in());
                         elem.send(socket());
-                        push(shape.out(), elem);
+                        final ZMsg reply = ZMsg.recvMsg(socket(), false);
+                        push(shape.out(), reply);
                     }
                 });
 

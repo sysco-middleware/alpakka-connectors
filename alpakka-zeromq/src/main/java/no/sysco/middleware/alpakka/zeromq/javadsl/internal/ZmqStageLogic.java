@@ -5,15 +5,15 @@ import akka.stream.stage.GraphStageLogic;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-public abstract class ZeroMQStageLogic extends GraphStageLogic {
+public abstract class ZmqStageLogic extends GraphStageLogic {
 
     private final ZContext zContext;
     private final ZMQ.Socket socket;
     private final String addresses;
 
-    ZeroMQStageLogic(Shape shape,
-                     String addresses,
-                     int socketType) {
+    ZmqStageLogic(Shape shape,
+                  String addresses,
+                  int socketType) {
         super(shape);
         this.addresses = addresses;
         this.zContext = new ZContext();
@@ -39,7 +39,7 @@ public abstract class ZeroMQStageLogic extends GraphStageLogic {
         return addresses;
     }
 
-    public static class ClientStageLogic extends ZeroMQStageLogic {
+    public static class ClientStageLogic extends ZmqStageLogic {
         ClientStageLogic(Shape shape,
                          String addresses,
                          int socketType) {
@@ -59,7 +59,7 @@ public abstract class ZeroMQStageLogic extends GraphStageLogic {
         }
     }
 
-    public static class ServerStageLogic extends ZeroMQStageLogic {
+    public static class ServerStageLogic extends ZmqStageLogic {
         ServerStageLogic(Shape shape,
                          String addresses,
                          int socketType) {

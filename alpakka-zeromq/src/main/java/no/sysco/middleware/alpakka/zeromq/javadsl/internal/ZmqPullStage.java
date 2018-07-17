@@ -9,7 +9,7 @@ import akka.stream.stage.GraphStageLogic;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-public class ZeroMQPullStage extends GraphStage<SourceShape<ZMsg>> {
+public class ZmqPullStage extends GraphStage<SourceShape<ZMsg>> {
 
     private final boolean isServer;
     private final String addresses;
@@ -17,7 +17,7 @@ public class ZeroMQPullStage extends GraphStage<SourceShape<ZMsg>> {
     private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQPull.out");
     private final SourceShape<ZMsg> shape = new SourceShape<>(outlet);
 
-    public ZeroMQPullStage(boolean isServer, String addresses) {
+    public ZmqPullStage(boolean isServer, String addresses) {
         this.isServer = isServer;
         this.addresses = addresses;
     }
@@ -30,26 +30,26 @@ public class ZeroMQPullStage extends GraphStage<SourceShape<ZMsg>> {
     @Override
     public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
         return isServer ?
-                new ZeroMQStageLogic.ServerStageLogic(shape, addresses, ZMQ.PULL) {
+                new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PULL) {
                     {
-                        setHandler(outlet, new AbstractOutHandler() {
+                        setHandler(shape.out(), new AbstractOutHandler() {
                             @Override
                             public void onPull() throws Exception {
                                 final ZMsg elem = ZMsg.recvMsg(socket(), true);
                                 if (elem != null)
-                                    push(outlet, elem);
+                                    push(shape.out(), elem);
                             }
                         });
                     }
                 } :
-                new ZeroMQStageLogic.ClientStageLogic(shape, addresses, ZMQ.PULL) {
+                new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.PULL) {
                     {
-                        setHandler(outlet, new AbstractOutHandler() {
+                        setHandler(shape.out(), new AbstractOutHandler() {
                             @Override
                             public void onPull() throws Exception {
                                 final ZMsg elem = ZMsg.recvMsg(socket(), true);
                                 if (elem != null)
-                                    push(outlet, elem);
+                                    push(shape.out(), elem);
                             }
                         });
                     }

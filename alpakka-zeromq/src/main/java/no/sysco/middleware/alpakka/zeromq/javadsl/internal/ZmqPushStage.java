@@ -8,7 +8,7 @@ import akka.stream.stage.GraphStageLogic;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-public class ZeroMQPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
+public class ZmqPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
 
     private final boolean isServer;
     private final String addresses;
@@ -17,8 +17,8 @@ public class ZeroMQPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
     private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQPush.out");
     private final FlowShape<ZMsg, ZMsg> shape = new FlowShape<>(inlet, outlet);
 
-    public ZeroMQPushStage(boolean isServer,
-                           String addresses) {
+    public ZmqPushStage(boolean isServer,
+                        String addresses) {
         this.isServer = isServer;
         this.addresses = addresses;
     }
@@ -31,7 +31,7 @@ public class ZeroMQPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
     @Override
     public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
         return isServer ?
-                new ZeroMQStageLogic.ServerStageLogic(shape, addresses, ZMQ.PUSH) {
+                new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PUSH) {
                     {
                         setHandler(shape.in(), new AbstractInHandler() {
                             @Override
@@ -50,7 +50,7 @@ public class ZeroMQPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
                         });
                     }
                 } :
-                new ZeroMQStageLogic.ClientStageLogic(shape, addresses, ZMQ.PUSH) {
+                new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.PUSH) {
                     {
                         setHandler(shape.in(), new AbstractInHandler() {
                             @Override
@@ -64,7 +64,7 @@ public class ZeroMQPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
                         setHandler(shape.out(), new AbstractOutHandler() {
                             @Override
                             public void onPull() throws Exception {
-                                tryPull(inlet);
+                                tryPull(shape.in());
                             }
                         });
                     }
