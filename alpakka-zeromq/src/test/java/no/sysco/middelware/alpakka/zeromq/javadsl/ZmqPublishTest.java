@@ -8,8 +8,6 @@ import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
-import akka.testkit.TestProbe;
-import akka.testkit.javadsl.TestKit;
 import no.sysco.middleware.alpakka.zeromq.javadsl.Zmq;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,7 +21,7 @@ public class ZmqPublishTest {
     private ActorMaterializer materializer;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
     }
