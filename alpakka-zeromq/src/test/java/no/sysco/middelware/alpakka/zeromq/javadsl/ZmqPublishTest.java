@@ -26,24 +26,26 @@ public class ZmqPublishTest {
 
     @Test
     public void shouldSendMessageWhenSourceElementAvailable() throws InterruptedException {
-        ZMQ.Context context = ZMQ.context(1);
-        ZMQ.Socket socket = context.socket(ZMQ.SUB);
+        //Given
+        final ZMQ.Context context = ZMQ.context(1);
+        final ZMQ.Socket socket = context.socket(ZMQ.SUB);
         socket.connect("tcp://localhost:5555");
-
-        Source<ZMsg, TestPublisher.Probe<ZMsg>> testSource = TestSource.probe(system);
-
-        TestPublisher.Probe<ZMsg> probe = Zmq.publishSink("tcp://*:5555").runWith(testSource, materializer);
-
-        probe.sendNext(ZMsg.newStringMsg("test"));
-        probe.sendComplete();
-
-        probe.ensureSubscription();
-
-
         socket.subscribe(ZMQ.SUBSCRIPTION_ALL);
 
-        String s = socket.recvStr();
+        Thread.sleep(1000); //wait for subscriber to connect
 
+        //When
+        Source<ZMsg, TestPublisher.Probe<ZMsg>> testSource = TestSource.probe(system);
+
+        TestPublisher.Probe<ZMsg> probe = Zmq.publishServerSink("tcp://*:5555").runWith(testSource, materializer);
+
+        probe.ensureSubscription();
+        Thread.sleep(1000); //wait for published to bind
+
+        //Then
+        probe.sendNext(ZMsg.newStringMsg("test"));
+
+        String s = socket.recvStr();
         Assert.assertEquals(s, "test");
 
         socket.close();

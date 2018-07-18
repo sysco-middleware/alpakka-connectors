@@ -9,20 +9,25 @@ import akka.stream.stage.GraphStageLogic;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
+import java.util.concurrent.CompletableFuture;
+
 public class ZmqSubscribeStage extends GraphStage<SourceShape<ZMsg>> {
 
+    private final boolean isServer;
     private final String addresses;
     private final String subscription;
 
     private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQSubscribe.out");
     private final SourceShape<ZMsg> shape = new SourceShape<>(outlet);
 
-    public ZmqSubscribeStage(String addresses) {
+    public ZmqSubscribeStage(boolean isServer, String addresses) {
+        this.isServer = isServer;
         this.addresses = addresses;
         this.subscription = null;
     }
 
-    public ZmqSubscribeStage(String addresses, String subscription) {
+    public ZmqSubscribeStage(boolean isServer, String addresses, String subscription) {
+        this.isServer = isServer;
         this.addresses = addresses;
         this.subscription = subscription;
     }
@@ -34,27 +39,50 @@ public class ZmqSubscribeStage extends GraphStage<SourceShape<ZMsg>> {
 
     @Override
     public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
-        return new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.SUB) {
-            @Override
-            public void preStart() throws Exception {
-                super.preStart();
-                if (subscription == null) {
-                    socket().subscribe(ZMQ.SUBSCRIPTION_ALL);
-                } else {
-                    socket().subscribe(subscription);
-                }
-            }
-
-            {
-                setHandler(shape.out(), new AbstractOutHandler() {
+        return isServer ?
+                new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.SUB) {
                     @Override
-                    public void onPull() throws Exception {
-                        final ZMsg elem = ZMsg.recvMsg(socket(), true);
-                        if (elem != null)
-                            push(shape.out(), elem);
+                    public void preStart() throws Exception {
+                        super.preStart();
+                        if (subscription == null) {
+                            socket().subscribe(ZMQ.SUBSCRIPTION_ALL);
+                        } else {
+                            socket().subscribe(subscription);
+                        }
                     }
-                });
-            }
-        };
+
+                    {
+                        setHandler(shape.out(), new AbstractOutHandler() {
+                            @Override
+                            public void onPull() throws Exception {
+                                final ZMsg elem = ZMsg.recvMsg(socket(), true);
+                                if (elem != null)
+                                    push(shape.out(), elem);
+                            }
+                        });
+                    }
+                } :
+                new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.SUB) {
+                    @Override
+                    public void preStart() throws Exception {
+                        super.preStart();
+                        if (subscription == null) {
+                            socket().subscribe(ZMQ.SUBSCRIPTION_ALL);
+                        } else {
+                            socket().subscribe(subscription);
+                        }
+                    }
+
+                    {
+                        setHandler(shape.out(), new AbstractOutHandler() {
+                            @Override
+                            public void onPull() throws Exception {
+                                final ZMsg elem = ZMsg.recvMsg(socket(), true);
+                                if (elem != null)
+                                    push(shape.out(), elem);
+                            }
+                        });
+                    }
+                };
     }
 }

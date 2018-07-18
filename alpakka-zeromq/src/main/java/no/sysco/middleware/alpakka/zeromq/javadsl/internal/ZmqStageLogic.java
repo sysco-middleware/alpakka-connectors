@@ -27,7 +27,7 @@ public abstract class ZmqStageLogic extends GraphStageLogic {
 
     @Override
     public void postStop() throws Exception {
-        zContext.close();
+        zContext.destroy();
         super.postStop();
     }
 
@@ -54,7 +54,7 @@ public abstract class ZmqStageLogic extends GraphStageLogic {
 
         @Override
         public void postStop() throws Exception {
-            socket().disconnect(getAddresses());
+            socket().close();
             super.postStop();
         }
     }
@@ -74,7 +74,7 @@ public abstract class ZmqStageLogic extends GraphStageLogic {
 
         @Override
         public void postStop() throws Exception {
-            socket().unbind(getAddresses());
+            socket().close();
             super.postStop();
         }
     }
