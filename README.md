@@ -58,7 +58,7 @@ public class App {
         
         Zmq.subscribeClientSource("tcp://localhost:5555")
            .map(zmsg -> {
-               System.out.println(zmsg.popString())
+               System.out.println(zmsg.popString());
                return zmsg;
            })
            .runWith(Sink.ignore(), mat);
