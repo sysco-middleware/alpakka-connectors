@@ -15,6 +15,9 @@ import org.junit.Test;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+
 public class ZmqTest {
 
   private ActorSystem system;
@@ -29,25 +32,29 @@ public class ZmqTest {
   @Test
   public void shouldServerPublishMessageWhenSourceElementAvailable() throws InterruptedException {
     //Given
-    final ZMQ.Context context = ZMQ.context(1);
-    final ZMQ.Socket socket = context.socket(ZMQ.SUB);
-    socket.connect("tcp://localhost:5561");
-    socket.subscribe(ZMQ.SUBSCRIPTION_ALL);
-
-    Thread.sleep(200); //wait for subscriber to connect
-
-    //When
+    final int port = findFreePort();
+    final String addr = "tcp://localhost:" + port;
+   //When
     Source<ZMsg, TestPublisher.Probe<ZMsg>> testSource = TestSource.probe(system);
 
-    TestPublisher.Probe<ZMsg> probe = Zmq.publishServerSink("tcp://*:5561").runWith(testSource, materializer);
+    TestPublisher.Probe<ZMsg> probe = Zmq.publishServerSink(addr).runWith(testSource, materializer);
 
     probe.ensureSubscription();
     Thread.sleep(200); //wait for published to bind
 
+    final ZMQ.Context context = ZMQ.context(1);
+    final ZMQ.Socket socket = context.socket(ZMQ.SUB);
+    socket.connect(addr);
+    socket.subscribe(ZMQ.SUBSCRIPTION_ALL);
+
+    Thread.sleep(200); //wait for subscriber to connect
+
+
     //Then
     probe.sendNext(ZMsg.newStringMsg("test"));
+    Thread.sleep(200);
 
-    String s = socket.recvStr();
+    String s = socket.recvStr(ZMQ.DONTWAIT);
     Assert.assertEquals(s, "test");
 
     socket.close();
@@ -57,24 +64,27 @@ public class ZmqTest {
   @Test
   public void shouldServerPushMessageWhenSourceElementAvailable() throws InterruptedException {
     //Given
+    final int port = findFreePort();
+    final String addr = "tcp://localhost:" + port;
     final ZMQ.Context context = ZMQ.context(1);
     final ZMQ.Socket socket = context.socket(ZMQ.PULL);
-    socket.connect("tcp://localhost:5555");
+    socket.connect(addr);
 
     Thread.sleep(200); //wait for subscriber to connect
 
     //When
     Source<ZMsg, TestPublisher.Probe<ZMsg>> testSource = TestSource.probe(system);
 
-    TestPublisher.Probe<ZMsg> probe = Zmq.pushServerSink("tcp://*:5555").runWith(testSource, materializer);
+    TestPublisher.Probe<ZMsg> probe = Zmq.pushServerSink(addr).runWith(testSource, materializer);
 
     probe.ensureSubscription();
     Thread.sleep(200); //wait for published to bind
 
     //Then
     probe.sendNext(ZMsg.newStringMsg("test"));
+    Thread.sleep(200); //wait for published to bind
 
-    String s = socket.recvStr();
+    String s = socket.recvStr(ZMQ.DONTWAIT);
     Assert.assertEquals(s, "test");
 
     socket.close();
@@ -84,24 +94,27 @@ public class ZmqTest {
   @Test
   public void shouldClientPushMessageWhenSourceElementAvailable() throws InterruptedException {
     //Given
+    final int port = findFreePort();
+    final String addr = "tcp://localhost:" + port;
     final ZMQ.Context context = ZMQ.context(1);
     final ZMQ.Socket socket = context.socket(ZMQ.PULL);
-    socket.bind("tcp://*:5557");
+    socket.bind(addr);
 
     Thread.sleep(200); //wait for subscriber to connect
 
     //When
     Source<ZMsg, TestPublisher.Probe<ZMsg>> testSource = TestSource.probe(system);
 
-    TestPublisher.Probe<ZMsg> probe = Zmq.pushClientSink("tcp://localhost:5557").runWith(testSource, materializer);
+    TestPublisher.Probe<ZMsg> probe = Zmq.pushClientSink(addr).runWith(testSource, materializer);
 
     probe.ensureSubscription();
     Thread.sleep(200); //wait for published to bind
 
     //Then
     probe.sendNext(ZMsg.newStringMsg("test"));
+    Thread.sleep(200); //wait for published to bind
 
-    String s = socket.recvStr();
+    String s = socket.recvStr(ZMQ.DONTWAIT);
     Assert.assertEquals(s, "test");
 
     socket.close();
@@ -111,15 +124,17 @@ public class ZmqTest {
   @Test
   public void shouldEmitElementWhenClientSubscriptionReceiveMessage() throws InterruptedException {
     //Given
+    final int port = findFreePort();
+    final String addr = "tcp://localhost:" + port;
     final ZMQ.Context context = ZMQ.context(1);
     final ZMQ.Socket socket = context.socket(ZMQ.PUB);
-    socket.bind("tcp://*:5559");
+    socket.bind(addr);
 
     Thread.sleep(200); //wait for subscriber to connect
 
     //When
     Sink<ZMsg, TestSubscriber.Probe<ZMsg>> testSink = TestSink.probe(system);
-    TestSubscriber.Probe<ZMsg> probe = Zmq.subscribeClientSource("tcp://localhost:5559").runWith(testSink, materializer);
+    TestSubscriber.Probe<ZMsg> probe = Zmq.subscribeClientSource(addr).runWith(testSink, materializer);
 
     probe.ensureSubscription();
     Thread.sleep(200); //wait for published to bind
@@ -138,15 +153,17 @@ public class ZmqTest {
   @Test
   public void shouldEmitElementWhenClientPullReceiveMessage() throws InterruptedException {
     //Given
+    final int port = findFreePort();
+    final String addr = "tcp://localhost:" + port;
     final ZMQ.Context context = ZMQ.context(1);
     final ZMQ.Socket socket = context.socket(ZMQ.PUSH);
-    socket.bind("tcp://*:5558");
+    socket.bind(addr);
 
     Thread.sleep(200); //wait for subscriber to connect
 
     //When
     Sink<ZMsg, TestSubscriber.Probe<ZMsg>> testSink = TestSink.probe(system);
-    TestSubscriber.Probe<ZMsg> probe = Zmq.pullClientSource("tcp://localhost:5558").runWith(testSink, materializer);
+    TestSubscriber.Probe<ZMsg> probe = Zmq.pullClientSource(addr).runWith(testSink, materializer);
 
     probe.ensureSubscription();
     Thread.sleep(200); //wait for published to bind
@@ -165,15 +182,17 @@ public class ZmqTest {
     @Test
   public void shouldEmitElementWhenServerPullReceiveMessage() throws InterruptedException {
     //Given
+    final int port = findFreePort();
+    final String addr = "tcp://localhost:" + port;
     final ZMQ.Context context = ZMQ.context(1);
     final ZMQ.Socket socket = context.socket(ZMQ.PUSH);
-    socket.connect("tcp://localhost:5560");
+    socket.connect(addr);
 
     Thread.sleep(200); //wait for subscriber to connect
 
     //When
     Sink<ZMsg, TestSubscriber.Probe<ZMsg>> testSink = TestSink.probe(system);
-    TestSubscriber.Probe<ZMsg> probe = Zmq.pullServerSource("tcp://localhost:5560").runWith(testSink, materializer);
+    TestSubscriber.Probe<ZMsg> probe = Zmq.pullServerSource(addr).runWith(testSink, materializer);
 
     probe.ensureSubscription();
     Thread.sleep(200); //wait for published to bind
@@ -187,5 +206,20 @@ public class ZmqTest {
 
     socket.close();
     context.term();
+  }
+
+  private static int findFreePort() {
+    try (ServerSocket socket = new ServerSocket(0)) {
+      socket.setReuseAddress(true);
+      int port = socket.getLocalPort();
+      try {
+        socket.close();
+      } catch (IOException e) {
+        // Ignore IOException on close()
+      }
+      return port;
+    } catch (IOException ignored) {
+    }
+    throw new IllegalStateException("Could not find a free TCP/IP port to run test");
   }
 }
