@@ -27,7 +27,7 @@ public class ZmqPublishTest {
     }
 
     @Test
-    public void shouldPublishMessageWhenSourceElementAvailable() throws InterruptedException {
+    public void shouldServerPublishMessageWhenSourceElementAvailable() throws InterruptedException {
         //Given
         final ZMQ.Context context = ZMQ.context(1);
         final ZMQ.Socket socket = context.socket(ZMQ.SUB);
@@ -55,7 +55,36 @@ public class ZmqPublishTest {
     }
 
     @Test
-    public void shouldEmitElementWhenSubscriptionReceiveMessage() throws InterruptedException {
+    public void shouldClientPublishMessageWhenSourceElementAvailable() throws InterruptedException {
+        //Given
+        final ZMQ.Context context = ZMQ.context(1);
+        final ZMQ.Socket socket = context.socket(ZMQ.SUB);
+        socket.bind("tcp://*:5557");
+        socket.subscribe(ZMQ.SUBSCRIPTION_ALL);
+
+        Thread.sleep(200); //wait for subscriber to connect
+
+        //When
+        Source<ZMsg, TestPublisher.Probe<ZMsg>> testSource = TestSource.probe(system);
+
+        TestPublisher.Probe<ZMsg> probe = Zmq.publishClientSink("tcp://localhost:5557").runWith(testSource, materializer);
+
+        probe.ensureSubscription();
+        Thread.sleep(200); //wait for published to bind
+
+        //Then
+        probe.sendNext(ZMsg.newStringMsg("test"));
+
+        String s = socket.recvStr();
+        Assert.assertEquals(s, "test");
+
+        socket.close();
+        context.term();
+    }
+
+
+    @Test
+    public void shouldEmitElementWhenClientSubscriptionReceiveMessage() throws InterruptedException {
         //Given
         final ZMQ.Context context = ZMQ.context(1);
         final ZMQ.Socket socket = context.socket(ZMQ.PUB);
@@ -66,6 +95,34 @@ public class ZmqPublishTest {
         //When
         Sink<ZMsg, TestSubscriber.Probe<ZMsg>> testSink = TestSink.probe(system);
         TestSubscriber.Probe<ZMsg> probe = Zmq.subscribeClientSource("tcp://localhost:5556").runWith(testSink, materializer);
+
+        probe.ensureSubscription();
+        Thread.sleep(200); //wait for published to bind
+
+        //Then
+        socket.send("test");
+        Thread.sleep(200); //wait for published to bind
+
+        ZMsg zMsg = probe.requestNext();
+        Assert.assertEquals("test", zMsg.popString());
+
+        socket.close();
+        context.term();
+    }
+
+
+    @Test
+    public void shouldEmitElementWhenServerSubscriptionReceiveMessage() throws InterruptedException {
+        //Given
+        final ZMQ.Context context = ZMQ.context(1);
+        final ZMQ.Socket socket = context.socket(ZMQ.PUB);
+        socket.connect("tcp://localhost:5559");
+
+        Thread.sleep(200); //wait for subscriber to connect
+
+        //When
+        Sink<ZMsg, TestSubscriber.Probe<ZMsg>> testSink = TestSink.probe(system);
+        TestSubscriber.Probe<ZMsg> probe = Zmq.subscribeServerSource("tcp://*:5559").runWith(testSink, materializer);
 
         probe.ensureSubscription();
         Thread.sleep(200); //wait for published to bind
