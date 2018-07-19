@@ -1,4 +1,4 @@
-package no.sysco.middelware.alpakka.zeromq.javadsl;
+package no.sysco.middleware.alpakka.zeromq.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;

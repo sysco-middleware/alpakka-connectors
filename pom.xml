@@ -270,8 +270,8 @@
     </profiles>
 
     <scm>
-        <connection>scm:git:git://github.com/sysco-middleware/alpakka-connectors.git</connection>
-        <developerConnection>scm:git:ssh://github.com:sysco-middleware/alpakka-connectors.git</developerConnection>
+        <connection>scm:git:ssh://git@github.com/sysco-middleware/alpakka-connectors.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/sysco-middleware/alpakka-connectors.git</developerConnection>
         <url>http://github.com/sysco-middleware/alpakka-connectors/tree/master</url>
     </scm>
 
