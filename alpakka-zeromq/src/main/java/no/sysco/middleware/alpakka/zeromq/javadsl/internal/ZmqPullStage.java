@@ -11,48 +11,50 @@ import org.zeromq.ZMsg;
 
 public class ZmqPullStage extends GraphStage<SourceShape<ZMsg>> {
 
-    private final boolean isServer;
-    private final String addresses;
+  private final boolean isServer;
+  private final String addresses;
 
-    private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQPull.out");
-    private final SourceShape<ZMsg> shape = new SourceShape<>(outlet);
+  private final Outlet<ZMsg> outlet = Outlet.create("ZmqPull.out");
+  private final SourceShape<ZMsg> shape = new SourceShape<>(outlet);
 
-    public ZmqPullStage(boolean isServer, String addresses) {
-        this.isServer = isServer;
-        this.addresses = addresses;
-    }
+  public ZmqPullStage(boolean isServer, String addresses) {
+    this.isServer = isServer;
+    this.addresses = addresses;
+  }
 
-    @Override
-    public SourceShape<ZMsg> shape() {
-        return shape;
-    }
+  @Override
+  public SourceShape<ZMsg> shape() {
+    return shape;
+  }
 
-    @Override
-    public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
-        return isServer ?
-                new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PULL) {
-                    {
-                        setHandler(shape.out(), new AbstractOutHandler() {
-                            @Override
-                            public void onPull() throws Exception {
-                                final ZMsg elem = ZMsg.recvMsg(socket(), true);
-                                if (elem != null)
-                                    push(shape.out(), elem);
-                            }
-                        });
-                    }
-                } :
-                new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.PULL) {
-                    {
-                        setHandler(shape.out(), new AbstractOutHandler() {
-                            @Override
-                            public void onPull() throws Exception {
-                                final ZMsg elem = ZMsg.recvMsg(socket(), true);
-                                if (elem != null)
-                                    push(shape.out(), elem);
-                            }
-                        });
-                    }
-                };
-    }
+  @Override
+  public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
+    return isServer ?
+        new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PULL) {
+          {
+            setHandler(shape.out(), new AbstractOutHandler() {
+              @Override
+              public void onPull() throws Exception {
+                final ZMsg elem = ZMsg.recvMsg(socket(), true);
+                if (elem != null) {
+                  push(shape.out(), elem);
+                }
+              }
+            });
+          }
+        } :
+        new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.PULL) {
+          {
+            setHandler(shape.out(), new AbstractOutHandler() {
+              @Override
+              public void onPull() throws Exception {
+                final ZMsg elem = ZMsg.recvMsg(socket(), true);
+                if (elem != null) {
+                  push(shape.out(), elem);
+                }
+              }
+            });
+          }
+        };
+  }
 }

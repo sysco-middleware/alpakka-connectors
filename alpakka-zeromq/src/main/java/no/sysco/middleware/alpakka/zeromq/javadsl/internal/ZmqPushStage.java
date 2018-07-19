@@ -10,64 +10,64 @@ import org.zeromq.ZMsg;
 
 public class ZmqPushStage extends GraphStage<FlowShape<ZMsg, ZMsg>> {
 
-    private final boolean isServer;
-    private final String addresses;
+  private final boolean isServer;
+  private final String addresses;
 
-    private final Inlet<ZMsg> inlet = Inlet.create("ZeroMQPush.in");
-    private final Outlet<ZMsg> outlet = Outlet.create("ZeroMQPush.out");
-    private final FlowShape<ZMsg, ZMsg> shape = new FlowShape<>(inlet, outlet);
+  private final Inlet<ZMsg> inlet = Inlet.create("ZmqPush.in");
+  private final Outlet<ZMsg> outlet = Outlet.create("ZmqPush.out");
+  private final FlowShape<ZMsg, ZMsg> shape = new FlowShape<>(inlet, outlet);
 
-    public ZmqPushStage(boolean isServer,
-                        String addresses) {
-        this.isServer = isServer;
-        this.addresses = addresses;
-    }
+  public ZmqPushStage(boolean isServer,
+                      String addresses) {
+    this.isServer = isServer;
+    this.addresses = addresses;
+  }
 
-    @Override
-    public FlowShape<ZMsg, ZMsg> shape() {
-        return shape;
-    }
+  @Override
+  public FlowShape<ZMsg, ZMsg> shape() {
+    return shape;
+  }
 
-    @Override
-    public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
-        return isServer ?
-                new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PUSH) {
-                    {
-                        setHandler(shape.in(), new AbstractInHandler() {
-                            @Override
-                            public void onPush() throws Exception {
-                                ZMsg elem = grab(shape.in());
-                                elem.send(socket());
-                                push(shape.out(), elem);
-                            }
-                        });
+  @Override
+  public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
+    return isServer ?
+        new ZmqStageLogic.ServerStageLogic(shape, addresses, ZMQ.PUSH) {
+          {
+            setHandler(shape.in(), new AbstractInHandler() {
+              @Override
+              public void onPush() throws Exception {
+                ZMsg elem = grab(shape.in());
+                elem.send(socket());
+                push(shape.out(), elem);
+              }
+            });
 
-                        setHandler(shape.out(), new AbstractOutHandler() {
-                            @Override
-                            public void onPull() throws Exception {
-                                tryPull(inlet);
-                            }
-                        });
-                    }
-                } :
-                new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.PUSH) {
-                    {
-                        setHandler(shape.in(), new AbstractInHandler() {
-                            @Override
-                            public void onPush() throws Exception {
-                                ZMsg elem = grab(shape.in());
-                                elem.send(socket());
-                                push(shape.out(), elem);
-                            }
-                        });
+            setHandler(shape.out(), new AbstractOutHandler() {
+              @Override
+              public void onPull() throws Exception {
+                tryPull(inlet);
+              }
+            });
+          }
+        } :
+        new ZmqStageLogic.ClientStageLogic(shape, addresses, ZMQ.PUSH) {
+          {
+            setHandler(shape.in(), new AbstractInHandler() {
+              @Override
+              public void onPush() throws Exception {
+                ZMsg elem = grab(shape.in());
+                elem.send(socket());
+                push(shape.out(), elem);
+              }
+            });
 
-                        setHandler(shape.out(), new AbstractOutHandler() {
-                            @Override
-                            public void onPull() throws Exception {
-                                tryPull(shape.in());
-                            }
-                        });
-                    }
-                };
-    }
+            setHandler(shape.out(), new AbstractOutHandler() {
+              @Override
+              public void onPull() throws Exception {
+                tryPull(shape.in());
+              }
+            });
+          }
+        };
+  }
 }
