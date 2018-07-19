@@ -1,4 +1,6 @@
-# alpakka-connectors
+# Alpakka Connectors
+
+[![Build Status](https://travis-ci.org/sysco-middleware/alpakka-connectors.svg?branch=master)](https://travis-ci.org/sysco-middleware/alpakka-connectors)
 
 ## File Connectors
 
