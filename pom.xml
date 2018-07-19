@@ -9,6 +9,7 @@
     <packaging>pom</packaging>
 
     <name>alpakka-connectors</name>
+    <description>Alpakka connectors to integrate external systems with Akka Streams</description>
     <url>http://github.com/sysco-middleware/alpakka-connectors</url>
 
     <licenses>
