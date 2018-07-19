@@ -2,11 +2,17 @@
 
 [![Build Status](https://travis-ci.org/sysco-middleware/alpakka-connectors.svg?branch=master)](https://travis-ci.org/sysco-middleware/alpakka-connectors)
 
+
+[![Maven metadata URI](https://img.shields.io/maven-metadata/v/http/central.maven.org/maven2/no/sysco/middleware/alpakka/alpakka-connectors/maven-metadata.xml.svg)](https://repo1.maven.org/maven2/no/sysco/middleware/alpakka/alpakka-connectors)
+
 ## File Connectors
 
 ### Listening to changes in a directory
 
-The RecursiveDirectoryChangesSource tries to improve the existing DirectoryChangesSource from alpakka with recursive folder monitoring. It will emit elements every time there is a change to a watched directory in the local file system or any of the subdirectories (new or existing). The enumeration consists of the path that was changed and an enumeration describing what kind of change it was.
+The RecursiveDirectoryChangesSource tries to improve the existing DirectoryChangesSource from alpakka with recursive 
+folder monitoring. It will emit elements every time there is a change to a watched directory in the local file system 
+or any of the subdirectories (new or existing). The enumeration consists of the path that was changed and an 
+enumeration describing what kind of change it was.
 
 ```java
 import no.sysco.middleware.alpakka.files.javadsl.RecursiveDirectoryChangesSource;
