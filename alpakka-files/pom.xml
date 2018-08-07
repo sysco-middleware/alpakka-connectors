@@ -4,7 +4,7 @@
     <parent>
         <groupId>no.sysco.middleware.alpakka</groupId>
         <artifactId>alpakka-connectors</artifactId>
-        <version>0.1.2</version>
+        <version>0.1.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>alpakka-files</artifactId>
