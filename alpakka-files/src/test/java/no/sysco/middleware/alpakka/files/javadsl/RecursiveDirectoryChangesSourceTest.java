@@ -15,6 +15,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,12 +76,6 @@ public class RecursiveDirectoryChangesSourceTest {
         assertEquals(pair1.second(), DirectoryChange.Creation);
         assertEquals(pair1.first(), createdFile);
 
-        Files.write(createdFile, "Some data".getBytes());
-
-        final Pair<Path, DirectoryChange> pair2 = probe.requestNext();
-        assertEquals(pair2.second(), DirectoryChange.Modification);
-        assertEquals(pair2.first(), createdFile);
-
         Files.delete(createdFile);
 
         final Pair<Path, DirectoryChange> pair3 = probe.requestNext();
@@ -110,12 +107,6 @@ public class RecursiveDirectoryChangesSourceTest {
         final Pair<Path, DirectoryChange> fileCreatedPair = probe.requestNext();
         assertEquals(fileCreatedPair.second(), DirectoryChange.Creation);
         assertEquals(fileCreatedPair.first(), createdFile);
-
-        Files.write(createdFile, "Some data".getBytes());
-
-        final Pair<Path, DirectoryChange> fileModifiedPair = probe.requestNext();
-        assertEquals(fileModifiedPair.second(), DirectoryChange.Modification);
-        assertEquals(fileModifiedPair.first(), createdFile);
 
         Files.delete(createdFile);
 
@@ -205,6 +196,45 @@ public class RecursiveDirectoryChangesSourceTest {
             probe.expectNext();
         }
 
+        //a cleanup
+        Files.delete(BASE_PATH);
+
+        probe.cancel();
+    }
+
+    @Test
+    public void emitCreateEventWhenFileLocked() throws IOException {
+        final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
+
+        final int numberOfChanges = 1;
+
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
+                .runWith(Sink.fromSubscriber(probe), materializer);
+
+        probe.request(numberOfChanges);
+
+//        final CompletableFuture future = this.watcher.watchAsync();
+        final Path child = BASE_PATH.resolve("test2files");
+        FileChannel channel = null;
+        FileLock lock = null;
+        try {
+
+            File file = child.toFile();
+            channel = new RandomAccessFile(file, "rw").getChannel();
+            lock = channel.lock();
+
+        } finally {
+            if(lock != null && channel != null && channel.isOpen()){
+                lock.release();
+                channel.close();
+            }
+        }
+
+        final Pair<Path, DirectoryChange> pair1 = probe.expectNext();
+        assertEquals(pair1.second(), DirectoryChange.Creation);
+        assertEquals(pair1.first(), child);
+
+        Files.delete(child);
         //a cleanup
         Files.delete(BASE_PATH);
 

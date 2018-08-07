@@ -17,6 +17,7 @@ import io.methvin.watcher.DirectoryWatcher;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Queue;
 
 /**
@@ -51,7 +52,9 @@ public class RecursiveDirectoryChangesSource {
         public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
             return new TimerGraphStageLogic(shape) {
                 private final Queue<Pair<Path, DirectoryChange>> buffer = new ArrayDeque<>();
-                private final DirectoryWatcher watcher = DirectoryWatcher.create(directoryPath, event -> {
+                private final DirectoryWatcher watcher =
+                        DirectoryWatcher.create(Collections.singletonList(directoryPath), event -> {
+
                     if (DirectoryChangeEvent.EventType.OVERFLOW.equals(event.eventType())) {
                         failStage(new RuntimeException("Overflow from watch service: '" + directoryPath + "'"));
                     } else {
@@ -64,7 +67,7 @@ public class RecursiveDirectoryChangesSource {
                             failStage(new RuntimeException("Max event buffer size " + maxBufferSize + " reached for $path"));
                         }
                     }
-                });
+                }, false);
 
 
                 {
