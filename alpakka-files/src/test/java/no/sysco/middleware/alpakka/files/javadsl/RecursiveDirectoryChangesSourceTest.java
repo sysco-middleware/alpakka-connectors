@@ -15,9 +15,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,23 +70,54 @@ public class RecursiveDirectoryChangesSourceTest {
 
 
         final Pair<Path, DirectoryChange> pair1 = probe.expectNext();
-        assertEquals(pair1.second(), DirectoryChange.Creation);
-        assertEquals(pair1.first(), createdFile);
+        assertEquals(DirectoryChange.Creation, pair1.second());
+        assertEquals(createdFile, pair1.first());
 
         Files.delete(createdFile);
 
-        final Pair<Path, DirectoryChange> pair3 = probe.requestNext();
-        assertEquals(pair3.second(), DirectoryChange.Deletion);
-        assertEquals(pair3.first(), createdFile);
+        TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe1 = probe.request(10);
+        final Pair<Path, DirectoryChange> pair5 = probe.requestNext();
+        assertEquals(DirectoryChange.Deletion, pair5.second());
+        assertEquals(createdFile, pair5.first());
 
         //a cleanup
         Files.delete(BASE_PATH);
 
         probe.cancel();
-	}
+    }
 
-	@Test
-	public void sourceShoudldEmitOnSubdirectoryChanges() throws IOException {
+    @Test
+    public void sourceShouldEmitOnDirectoryChangesModifyFile() throws Exception {
+        final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
+
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
+                .runWith(Sink.fromSubscriber(probe), materializer);
+
+        probe.request(1);
+        final Path createdFile = Files.createFile(BASE_PATH.resolve("test1file1.sample"));
+
+
+        final Pair<Path, DirectoryChange> pair1 = probe.expectNext();
+        assertEquals(DirectoryChange.Creation, pair1.second());
+        assertEquals(createdFile, pair1.first());
+
+        Files.write(createdFile, "Some data".getBytes());
+
+        //Expecting at least one modification. Note: there might be multiple events, depending on the OS
+        final Pair<Path, DirectoryChange> pair2 = probe.requestNext();
+        assertEquals(DirectoryChange.Modification, pair2.second());
+        assertEquals(createdFile, pair2.first());
+
+        probe.cancel();
+
+        Files.delete(createdFile);
+        //a cleanup
+        Files.delete(BASE_PATH);
+
+    }
+
+    @Test
+    public void sourceShouldEmitOnSubdirectoryChanges() throws IOException {
         final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
 
         RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
@@ -100,25 +128,29 @@ public class RecursiveDirectoryChangesSourceTest {
         final Path createdSubfolder = Files.createDirectory(BASE_PATH.resolve("subfolder1"));
 
         final Pair<Path, DirectoryChange> subDirCreatedPair = probe.expectNext();
-        assertEquals(subDirCreatedPair.second(), DirectoryChange.Creation);
-        assertEquals(subDirCreatedPair.first(), createdSubfolder);
+        assertEquals(DirectoryChange.Creation, subDirCreatedPair.second());
+        assertEquals(createdSubfolder, subDirCreatedPair.first());
 
         final Path createdFile = Files.createFile(createdSubfolder.resolve("test1file1.sample"));
         final Pair<Path, DirectoryChange> fileCreatedPair = probe.requestNext();
-        assertEquals(fileCreatedPair.second(), DirectoryChange.Creation);
-        assertEquals(fileCreatedPair.first(), createdFile);
+        assertEquals(DirectoryChange.Creation, fileCreatedPair.second());
+        assertEquals(createdFile, fileCreatedPair.first());
 
         Files.delete(createdFile);
 
         final Pair<Path, DirectoryChange> fileDeletedPair = probe.requestNext();
-        assertEquals(fileDeletedPair.second(), DirectoryChange.Deletion);
-        assertEquals(fileDeletedPair.first(), createdFile);
+        assertEquals(DirectoryChange.Deletion, fileDeletedPair.second());
+        assertEquals(createdFile, fileDeletedPair.first());
 
         Files.delete(createdSubfolder);
 
-        final Pair<Path, DirectoryChange> folderDeletedPair = probe.requestNext();
-        assertEquals(folderDeletedPair.second(), DirectoryChange.Deletion);
-        assertEquals(folderDeletedPair.first(), createdSubfolder);
+        Pair<Path, DirectoryChange> folderDeletedPair = probe.requestNext();
+        if (folderDeletedPair.second().equals(DirectoryChange.Modification)){
+            //windows sometimes emits modify event before delete
+            folderDeletedPair = probe.requestNext();
+        }
+        assertEquals(DirectoryChange.Deletion, folderDeletedPair.second());
+        assertEquals(createdSubfolder, folderDeletedPair.first());
 
         //a cleanup
         Files.delete(BASE_PATH);
@@ -201,43 +233,5 @@ public class RecursiveDirectoryChangesSourceTest {
 
         probe.cancel();
     }
-
-    @Test
-    public void emitCreateEventWhenFileLocked() throws IOException {
-        final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
-
-        final int numberOfChanges = 1;
-
-        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250,ChronoUnit.MILLIS), 200)
-                .runWith(Sink.fromSubscriber(probe), materializer);
-
-        probe.request(numberOfChanges);
-
-//        final CompletableFuture future = this.watcher.watchAsync();
-        final Path child = BASE_PATH.resolve("test2files");
-        FileChannel channel = null;
-        FileLock lock = null;
-        try {
-
-            File file = child.toFile();
-            channel = new RandomAccessFile(file, "rw").getChannel();
-            lock = channel.lock();
-
-        } finally {
-            if(lock != null && channel != null && channel.isOpen()){
-                lock.release();
-                channel.close();
-            }
-        }
-
-        final Pair<Path, DirectoryChange> pair1 = probe.expectNext();
-        assertEquals(pair1.second(), DirectoryChange.Creation);
-        assertEquals(pair1.first(), child);
-
-        Files.delete(child);
-        //a cleanup
-        Files.delete(BASE_PATH);
-
-        probe.cancel();
-    }
 }
+
