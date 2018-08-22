@@ -21,16 +21,11 @@
 
     <developers>
         <developer>
-            <name>Jorge Quilcate</name>
-            <email>jorge.quilcate@sysco.no</email>
+            <id>sysco-middleware</id>
+            <name>Sysco Middleware developers</name>
             <organization>Sysco AS</organization>
-            <organizationUrl>http://www.sysco.no</organizationUrl>
-        </developer>
-        <developer>
-            <name>Dejan Maric</name>
-            <email>dejan.maric@sysco.no</email>
-            <organization>Sysco AS</organization>
-            <organizationUrl>http://www.sysco.no</organizationUrl>
+            <url>http://github.com/sysco-middleware</url>
+            <organizationUrl>http://sysco.no</organizationUrl>
         </developer>
     </developers>
 
@@ -46,6 +41,7 @@
     <modules>
         <module>alpakka-files</module>
         <module>alpakka-zeromq</module>
+        <module>alpakka-brave</module>
     </modules>
 
     <dependencies>
