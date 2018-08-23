@@ -12,21 +12,22 @@ import akka.stream.stage.GraphStageLogic;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
+import brave.propagation.TraceContext;
 
-class BraveStartSpanFlowStage<T> extends GraphStage<FlowShape<T, Pair<T, Span>>> {
+class BraveStartSpanFlowStage<T> extends GraphStage<FlowShape<T, Pair<T, TraceContext>>> {
 
   private final Tracing tracing;
   private final String name;
 
   private final Inlet<T> in = Inlet.create("BraveStartSpanFlow.in");
-  private final Outlet<Pair<T, Span>> out = Outlet.create("BraveStartSpanFlow.out");
+  private final Outlet<Pair<T, TraceContext>> out = Outlet.create("BraveStartSpanFlow.out");
 
   BraveStartSpanFlowStage(Tracing tracing, String name) {
     this.tracing = tracing;
     this.name = name;
   }
 
-  public FlowShape<T, Pair<T, Span>> shape() {
+  public FlowShape<T, Pair<T, TraceContext>> shape() {
     return new FlowShape<>(in, out);
   }
 
@@ -39,7 +40,7 @@ class BraveStartSpanFlowStage<T> extends GraphStage<FlowShape<T, Pair<T, Span>>>
         setHandler(in, new AbstractInHandler() {
           public void onPush() {
             Span span = tracer.newTrace().name(name).start();
-            push(out, Pair.create(grab(in), span));
+            push(out, Pair.create(grab(in), span.context()));
           }
         });
 

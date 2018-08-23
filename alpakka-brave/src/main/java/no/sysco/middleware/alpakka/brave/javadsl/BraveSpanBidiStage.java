@@ -12,16 +12,18 @@ import akka.stream.stage.GraphStageLogic;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
+import brave.propagation.TraceContext;
 
-class BraveSpanBidiStage<A, B> extends GraphStage<BidiShape<Pair<A, Span>, A, B, Pair<B, Span>>> {
+class BraveSpanBidiStage<A, B>
+    extends GraphStage<BidiShape<Pair<A, TraceContext>, A, B, Pair<B, TraceContext>>> {
 
   private final Tracing tracing;
   private final String name;
 
-  private final Inlet<Pair<A, Span>> in1 = Inlet.create("BraveSpanBidi.in1");
+  private final Inlet<Pair<A, TraceContext>> in1 = Inlet.create("BraveSpanBidi.in1");
   private final Outlet<A> out1 = Outlet.create("BraveSpanBidi.out1");
   private final Inlet<B> in2 = Inlet.create("BraveSpanBidi.in2");
-  private final Outlet<Pair<B, Span>> out2 = Outlet.create("BraveSpanBidi.out2");
+  private final Outlet<Pair<B, TraceContext>> out2 = Outlet.create("BraveSpanBidi.out2");
 
   BraveSpanBidiStage(Tracing tracing, String name) {
     this.tracing = tracing;
@@ -34,16 +36,16 @@ class BraveSpanBidiStage<A, B> extends GraphStage<BidiShape<Pair<A, Span>, A, B,
       final Tracer tracer = tracing.tracer();
 
       Span current;
-      Span parent;
+      TraceContext parent;
 
       {
 
         setHandler(in1, new AbstractInHandler() {
           @Override
           public void onPush() {
-            final Pair<A, Span> grab = grab(in1);
+            final Pair<A, TraceContext> grab = grab(in1);
             parent = grab.second();
-            current = tracer.newChild(grab.second().context()).name(name).start();
+            current = tracer.newChild(grab.second()).name(name).start();
             push(out1, grab.first());
           }
         });
@@ -74,7 +76,7 @@ class BraveSpanBidiStage<A, B> extends GraphStage<BidiShape<Pair<A, Span>, A, B,
   }
 
   @Override
-  public BidiShape<Pair<A, Span>, A, B, Pair<B, Span>> shape() {
+  public BidiShape<Pair<A, TraceContext>, A, B, Pair<B, TraceContext>> shape() {
     return new BidiShape<>(in1, out1, in2, out2);
   }
 }
