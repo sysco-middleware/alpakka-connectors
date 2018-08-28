@@ -25,6 +25,22 @@
       <artifactId>brave</artifactId>
       <version>${brave.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-stream-testkit_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.10.0</version>
+    </dependency>
   </dependencies>
 
 </project>
