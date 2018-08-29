@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
 public class RecursiveDirectoryChangesSourceTest {
@@ -230,6 +231,39 @@ public class RecursiveDirectoryChangesSourceTest {
 
         //a cleanup
         Files.delete(BASE_PATH);
+
+        probe.cancel();
+    }
+
+    @Test
+    public void failStageWhenBufferFull() throws Exception {
+        final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
+
+        final int maxBufferSize = 2;
+        final int numberOfChanges = 3;
+
+        RecursiveDirectoryChangesSource.create(BASE_PATH, Duration.of(250, ChronoUnit.MILLIS), maxBufferSize)
+            .runWith(Sink.fromSubscriber(probe), materializer);
+
+        probe.request(numberOfChanges);
+
+        final List<Path> files = new ArrayList<>();
+
+        for (int i = 0; i < numberOfChanges; i++) {
+            final Path file = Files.createFile(BASE_PATH.resolve("test2files" + i));
+            files.add(file);
+        }
+
+        Throwable throwable = probe.expectError();
+
+        assertTrue("Not a runtime exception", throwable instanceof RuntimeException);
+
+        if(Files.exists(BASE_PATH)){
+            Files.walk(BASE_PATH)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
+        }
 
         probe.cancel();
     }

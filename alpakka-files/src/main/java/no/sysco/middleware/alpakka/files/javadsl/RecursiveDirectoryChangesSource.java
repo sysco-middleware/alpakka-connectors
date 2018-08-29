@@ -12,8 +12,10 @@ import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.TimerGraphStageLogic;
 import io.methvin.watcher.DirectoryChangeEvent;
+import io.methvin.watcher.DirectoryChangeListener;
 import io.methvin.watcher.DirectoryWatcher;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayDeque;
@@ -53,22 +55,36 @@ public class RecursiveDirectoryChangesSource {
             return new TimerGraphStageLogic(shape) {
                 private final Queue<Pair<Path, DirectoryChange>> buffer = new ArrayDeque<>();
                 private final DirectoryWatcher watcher =
-                        DirectoryWatcher.create(Collections.singletonList(directoryPath), event -> {
+                        DirectoryWatcher.create(Collections.singletonList(directoryPath), getDirectoryChangeListener(), false);
 
-                    if (DirectoryChangeEvent.EventType.OVERFLOW.equals(event.eventType())) {
-                        failStage(new RuntimeException("Overflow from watch service: '" + directoryPath + "'"));
-                    } else {
-                        final Path path = event.path();
-                        final Path absolutePath = directoryPath.resolve(path);
-                        final DirectoryChangeEvent.EventType change = event.eventType();
+                private DirectoryChangeListener getDirectoryChangeListener() {
+                    return new DirectoryChangeListener() {
 
-                        buffer.add(Pair.create(absolutePath, mapChange(change)));
-                        if (buffer.size() > maxBufferSize) {
-                            failStage(new RuntimeException("Max event buffer size " + maxBufferSize + " reached for $path"));
+                        @Override
+                        public void onException(final Exception e) {
+                            try {
+                                watcher.close();
+                            } catch (IOException e1) {}
+                            failStage(e);
                         }
-                    }
-                }, false);
 
+                        @Override
+                        public void onEvent(final DirectoryChangeEvent event) {
+                            if (DirectoryChangeEvent.EventType.OVERFLOW.equals(event.eventType())) {
+                                throw new RuntimeException("Overflow from watch service: '" + directoryPath + "'");
+                            } else {
+                                final Path path = event.path();
+                                final Path absolutePath = directoryPath.resolve(path);
+                                final DirectoryChangeEvent.EventType change = event.eventType();
+
+                                buffer.add(Pair.create(absolutePath, mapChange(change)));
+                                if (buffer.size() > maxBufferSize) {
+                                    throw new RuntimeException("Max event buffer size " + maxBufferSize + " reached for path: " + absolutePath);
+                                }
+                            }
+                        }
+                    };
+                }
 
                 {
                     setHandler(outlet, new AbstractOutHandler() {
