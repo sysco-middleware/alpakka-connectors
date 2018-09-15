@@ -21,8 +21,8 @@ public class Brave {
    * Creates a {@link Flow} that pairs input element with a started trace context, that can be propagated
    * and must be closed before completing a stream transaction to be reported. See `finishSpanFlow`.
    */
-  public static <T> Graph<FlowShape<T, Pair<T, TraceContext>>, NotUsed> startSpanFlow(final Tracing tracing,
-                                                                                      final String spanName) {
+  public static <T> Flow<T, Pair<T, TraceContext>, NotUsed> startSpanFlow(final Tracing tracing,
+                                                                          final String spanName) {
     return Flow.fromGraph(new BraveStartSpanFlowStage<>(tracing, spanName));
   }
 

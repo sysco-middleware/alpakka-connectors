@@ -3,12 +3,14 @@ package no.sysco.middleware.alpakka.brave.javadsl;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import brave.Tracing;
 import brave.propagation.StrictScopeDecorator;
 import brave.propagation.ThreadLocalCurrentTraceContext;
+import brave.propagation.TraceContext;
 import junit.framework.TestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -20,6 +22,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 
 public class BraveTest {
@@ -63,6 +67,69 @@ public class BraveTest {
 
       Span span = takeSpan();
       assertThat(span).isNotNull();
+    }};
+  }
+
+  @Test
+  public void shouldStartAndFinishTrace() throws InterruptedException {
+    new TestKit(system) {{
+      Source.single("hello")
+          .via(Brave.startSpanFlow(tracing, "my-span"))
+          .via(Brave.finishSpanFlow(tracing))
+          .to(Sink.ignore())
+          .run(materializer);
+
+      Span span = takeSpan();
+      assertThat(span).isNotNull();
+    }};
+  }
+
+  @Test
+  public void shouldStartAndFinishTraceWithChildFlowSpan() throws InterruptedException {
+    new TestKit(system) {{
+      Source.single("hello")
+          .via(Brave.startSpanFlow(tracing, "my-span"))
+          .via(Brave.childSpanFlow(tracing, "map", Flow.<String>create().map(s -> s)))
+          .via(Brave.finishSpanFlow(tracing))
+          .to(Sink.ignore())
+          .run(materializer);
+
+      Span childSpan = takeSpan();
+      assertThat(childSpan).isNotNull();
+
+      Span span = takeSpan();
+      assertThat(span).isNotNull();
+
+      assertEquals(span.id(), childSpan.parentId());
+    }};
+  }
+
+
+  @Test
+  public void shouldStartAndFinishTraceWithChildFlowSpan2() throws InterruptedException {
+    new TestKit(system) {{
+      Source.single("hello")
+          .via(Brave.startSpanFlow(tracing, "my-span"))
+          .via(
+              Brave.childSpanFlowWithTraceContext(
+                  tracing,
+                  "map",
+                  Flow.<Pair<String, TraceContext>>create().map(s -> {
+                    brave.Span span = tracing.tracer().toSpan(s.second());
+                    assertNotNull(span);
+                    return s;
+                  })))
+          .via(Brave.finishSpanFlow(tracing))
+          .to(Sink.ignore())
+          .run(materializer);
+
+      Span childSpan = takeSpan();
+      assertThat(childSpan).isNotNull();
+
+      Span span = takeSpan();
+      assertThat(span).isNotNull();
+
+      assertEquals(span.id(), childSpan.parentId());
     }};
   }
 
