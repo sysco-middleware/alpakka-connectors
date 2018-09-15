@@ -1,4 +1,1 @@
 language: java
-
-script:
-  - ./mvnw test -B
