@@ -11,6 +11,9 @@
 
   <artifactId>alpakka-brave</artifactId>
 
+  <name>alpakka-brave</name>
+  <description>Zipkin's Brave instrumentation for Akka Streams</description>
+
   <properties>
     <brave.version>5.2.0</brave.version>
   </properties>
