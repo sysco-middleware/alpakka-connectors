@@ -65,3 +65,25 @@ public class App {
     }
 }
 ```
+
+## Zipkin-Brave Connectors
+
+Brave connectors create Spans flows to integrate tracing into your Akka Streams applications.
+
+```java
+public class App {
+  public static void main(String[] args){
+    final ActorSystem system = ActorSystem.create();
+        final ActorMaterializer mat = ActorMaterializer.create(system);
+        
+        final Tracing tracing = ...;
+        
+        Source.repeat("hello")
+          .via(Brave.startSpanFlow(tracing, "akka-stream-trace"))
+          .via(Brave.childSpanFlow(tracing, "akka-stream-span-map", Flow.<String>create().map(s -> s)))
+          .via(Brave.finishSpanFlow(tracing))
+          .to(Sink.ignore())
+          .run(materializer);
+  }
+}
+```
