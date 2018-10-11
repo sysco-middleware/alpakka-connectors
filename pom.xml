@@ -162,7 +162,7 @@
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <updateBranchVersions>true</updateBranchVersions>
                     <pushChanges>true</pushChanges>
-                    <useReleaseProfile>release</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
                 </configuration>
             </plugin>
             <plugin>
