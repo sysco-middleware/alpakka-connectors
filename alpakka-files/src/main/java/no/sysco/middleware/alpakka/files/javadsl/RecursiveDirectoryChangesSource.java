@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Queue;
 
 /**
@@ -54,8 +53,11 @@ public class RecursiveDirectoryChangesSource {
         public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
             return new TimerGraphStageLogic(shape) {
                 private final Queue<Pair<Path, DirectoryChange>> buffer = new ArrayDeque<>();
-                private final DirectoryWatcher watcher =
-                        DirectoryWatcher.create(Collections.singletonList(directoryPath), getDirectoryChangeListener(), false);
+                private final DirectoryWatcher watcher = DirectoryWatcher.builder()
+                    .path(directoryPath)
+                    .listener(getDirectoryChangeListener())
+                    .fileHashing(false)
+                    .build();
 
                 private DirectoryChangeListener getDirectoryChangeListener() {
                     return new DirectoryChangeListener() {
