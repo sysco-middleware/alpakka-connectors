@@ -95,12 +95,7 @@ public class RecursiveDirectoryChangesSource {
                             if (!buffer.isEmpty()) {
                                 pushHead();
                             } else {
-                                doPoll();
-                                if (!buffer.isEmpty()) {
-                                    pushHead();
-                                } else {
-                                    schedulePoll();
-                                }
+                                schedulePoll();
                             }
                         }
 
@@ -110,13 +105,17 @@ public class RecursiveDirectoryChangesSource {
                 @Override
                 public void onTimer(Object timerKey) throws Exception {
                     if (!isClosed(outlet)) {
-                        doPoll();
                         if (!buffer.isEmpty()) {
                             pushHead();
                         } else {
                             schedulePoll();
                         }
                     }
+                }
+
+                @Override
+                public void preStart() throws Exception {
+                    watcher.watchAsync();
                 }
 
                 @Override
@@ -129,11 +128,6 @@ public class RecursiveDirectoryChangesSource {
                     if (head != null) {
                         push(outlet, head);
                     }
-                }
-
-
-                private void doPoll() {
-                    watcher.watchAsync();
                 }
 
                 private void schedulePoll() {
